@@ -1,0 +1,1179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>HabitFlow — Daily Habits & Health</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<!-- PWA -->
+<link rel="manifest" href="manifest.json"/>
+<meta name="theme-color" content="#7c6aff"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="HabitFlow"/>
+<link rel="apple-touch-icon" href="icon-192.png"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<style>
+/* ── DARK MODE (default — neon) ─────────── */
+:root{
+  --bg:#0c0c14;--card:#13131f;--card2:#1a1a2a;
+  --border:#1e1e32;--border2:#2a2a45;--text:#e8e8f8;--muted:#555570;
+  --accent:#7c6aff;--accent2:#00dfa2;--warn:#ff6b35;--danger:#ff4757;
+  --yellow:#ffd166;--pink:#ff6b9d;
+  --shadow:rgba(0,0,0,0.4);
+  --nav-bg:#0e0e1afa;
+  --modal-bg:#0f0f1e;
+  --food-sugg-bg:#1a1a2e;
+  --title-color:#ffffff;
+}
+/* ── LIGHT MODE (premium blue/white) ───── */
+body.light{
+  --bg:#f0f4ff;--card:#ffffff;--card2:#eef1fa;
+  --border:#dde3f5;--border2:#c8d0ee;--text:#1a1e3c;--muted:#8890b8;
+  --accent:#4a6cf7;--accent2:#00c48c;--warn:#f97316;--danger:#ef4444;
+  --yellow:#f59e0b;--pink:#ec4899;
+  --shadow:rgba(74,108,247,0.12);
+  --nav-bg:rgba(255,255,255,0.92);
+  --modal-bg:#ffffff;
+  --food-sugg-bg:#ffffff;
+  --title-color:#1a1e3c;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;min-height:100vh;padding-bottom:90px;overflow-x:hidden;transition:background 0.4s,color 0.4s;}
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px;}
+
+/* ── THEME TOGGLE BTN ───────────────────── */
+.theme-btn{
+  position:fixed;top:16px;right:16px;z-index:100;
+  width:40px;height:40px;border-radius:50%;border:none;cursor:pointer;
+  font-size:18px;display:flex;align-items:center;justify-content:center;
+  background:var(--card);border:1px solid var(--border2);
+  box-shadow:0 2px 12px var(--shadow);transition:all 0.3s;
+}
+.theme-btn:hover{transform:scale(1.1) rotate(20deg);}
+
+/* ── ANIMATIONS ─────────────────────────── */
+@keyframes fadeUp{from{opacity:0;transform:translateY(18px);}to{opacity:1;transform:none;}}
+@keyframes popIn{from{transform:scale(0.88);opacity:0;}to{transform:scale(1);opacity:1;}}
+@keyframes slideUp{from{transform:translateY(50px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+@keyframes checkBounce{0%{transform:scale(1);}40%{transform:scale(1.35);}70%{transform:scale(0.9);}100%{transform:scale(1);}}
+@keyframes confetti{0%{transform:scale(0) rotate(0deg);opacity:1;}100%{transform:scale(1.5) rotate(720deg);opacity:0;}}
+@keyframes shimmer{0%{background-position:-400px 0;}100%{background-position:400px 0;}}
+@keyframes barGrow{from{width:0!important;}to{}}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 #7c6aff44;}50%{box-shadow:0 0 0 8px #7c6aff00;}}
+
+.fade-up{animation:fadeUp 0.45s ease both;}
+.fade-up-d1{animation-delay:0.05s;}
+.fade-up-d2{animation-delay:0.1s;}
+.fade-up-d3{animation-delay:0.15s;}
+.fade-up-d4{animation-delay:0.2s;}
+.pop-in{animation:popIn 0.3s cubic-bezier(0.34,1.56,0.64,1) both;}
+
+/* ── NAV ─────────────────────────────────── */
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:var(--nav-bg);backdrop-filter:blur(16px);border-top:1px solid var(--border);display:flex;z-index:50;transition:background 0.4s,border-color 0.4s;}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 4px 14px;cursor:pointer;transition:all 0.25s;color:var(--muted);font-size:10px;font-weight:600;letter-spacing:0.5px;gap:4px;border:none;background:transparent;}
+.nav-btn .ni{font-size:22px;transition:transform 0.3s cubic-bezier(0.34,1.56,0.64,1);}
+.nav-btn.active{color:var(--accent);}
+.nav-btn.active .ni{transform:scale(1.2) translateY(-2px);}
+
+/* ── PAGE ────────────────────────────────── */
+.page{display:none;padding:0 16px;max-width:600px;margin:0 auto;}
+.page.active{display:block;}
+
+/* ── HEADER ──────────────────────────────── */
+.page-header{padding:28px 0 20px;display:flex;justify-content:space-between;align-items:flex-start;}
+.page-title{font-size:28px;font-weight:800;color:var(--title-color);letter-spacing:-0.5px;transition:color 0.4s;}
+.page-sub{font-size:12px;color:var(--muted);margin-top:3px;}
+
+/* ── CARD ────────────────────────────────── */
+.card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:18px;margin-bottom:12px;transition:border-color 0.2s,transform 0.2s,background 0.4s;}
+.card:hover{border-color:var(--border2);}
+body.light .card{box-shadow:0 2px 16px var(--shadow);}
+.card-title{font-size:11px;color:var(--muted);letter-spacing:1px;font-weight:700;margin-bottom:14px;}
+
+/* ── BUTTON ──────────────────────────────── */
+.btn{cursor:pointer;border:none;border-radius:12px;font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;transition:all 0.18s;font-size:13px;position:relative;overflow:hidden;}
+.btn::after{content:'';position:absolute;inset:0;background:#fff;opacity:0;transition:opacity 0.15s;}
+.btn:hover::after{opacity:0.08;}
+.btn:hover{transform:translateY(-1px);}
+.btn:active{transform:scale(0.96);}
+.btn-primary{background:var(--accent);color:#fff;padding:12px 20px;}
+.btn-success{background:var(--accent2);color:#fff;padding:12px 20px;}
+.btn-ghost{background:var(--card2);color:var(--muted);padding:10px 16px;}
+.btn-sm{padding:7px 14px;font-size:12px;}
+.btn-danger{background:#ff475718;color:var(--danger);border:1px solid #ff475730;padding:7px 12px;font-size:12px;}
+body.light .btn-ghost{border:1px solid var(--border2);}
+
+/* ── INPUT ───────────────────────────────── */
+input,select,textarea{background:var(--card2);border:1.5px solid var(--border2);color:var(--text);border-radius:12px;padding:11px 14px;font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;width:100%;outline:none;transition:border-color 0.2s,box-shadow 0.2s,background 0.4s;}
+input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 20%,transparent);}
+input::placeholder{color:var(--muted);}
+.input-label{font-size:11px;color:var(--muted);letter-spacing:0.5px;margin-bottom:6px;font-weight:700;}
+
+/* ── MODAL ───────────────────────────────── */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.72);align-items:flex-end;justify-content:center;z-index:200;backdrop-filter:blur(8px);}
+.modal-bg.open{display:flex;}
+.modal{background:var(--modal-bg);border:1px solid var(--border2);border-radius:28px 28px 0 0;padding:28px 22px 44px;width:100%;max-width:600px;animation:slideUp 0.35s cubic-bezier(0.34,1.2,0.64,1);max-height:90vh;overflow-y:auto;transition:background 0.4s;}
+.modal h2{font-size:20px;font-weight:800;color:var(--title-color);margin-bottom:6px;}
+.modal p{font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.5;}
+.modal-footer{display:flex;gap:10px;margin-top:20px;}
+.modal-footer .btn{flex:1;padding:14px;font-size:14px;}
+
+/* ── HABIT CARD ──────────────────────────── */
+.habit-card{background:var(--card);border:1.5px solid var(--border);border-radius:20px;padding:16px 18px;margin-bottom:10px;transition:all 0.3s;animation:fadeUp 0.4s ease both;}
+.habit-card.done{border-color:color-mix(in srgb,var(--accent2) 40%,transparent);background:color-mix(in srgb,var(--accent2) 5%,var(--card));}
+.habit-card.overdue{border-color:color-mix(in srgb,var(--danger) 40%,transparent);background:color-mix(in srgb,var(--danger) 5%,var(--card));}
+.habit-card:hover{transform:translateY(-2px);box-shadow:0 8px 30px var(--shadow);}
+body.light .habit-card{box-shadow:0 2px 12px var(--shadow);}
+
+/* ── CHECKBOX ────────────────────────────── */
+.habit-check{width:32px;height:32px;border-radius:50%;border:2.5px solid var(--border2);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.25s;flex-shrink:0;font-size:16px;background:var(--card2);}
+.habit-check:hover{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 15%,transparent);transform:scale(1.1);}
+.habit-check.done{background:linear-gradient(135deg,var(--accent2),#00b87a);border-color:var(--accent2);color:#fff;animation:checkBounce 0.5s ease;}
+.habit-check.done:hover{transform:scale(1.05);}
+
+.habit-info{flex:1;}
+.habit-name{font-weight:700;font-size:15px;color:var(--title-color);transition:all 0.3s;}
+.habit-name.done{text-decoration:line-through;opacity:0.45;}
+.habit-meta{font-size:11px;color:var(--muted);margin-top:4px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
+.badge{padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:0.3px;}
+.badge-habit{background:color-mix(in srgb,var(--accent) 18%,transparent);color:var(--accent);}
+.badge-task{background:color-mix(in srgb,var(--yellow) 18%,transparent);color:var(--yellow);}
+.badge-overdue{background:color-mix(in srgb,var(--danger) 18%,transparent);color:var(--danger);}
+.badge-done{background:color-mix(in srgb,var(--accent2) 18%,transparent);color:var(--accent2);}
+.habit-actions{display:flex;gap:6px;align-items:center;}
+
+/* ── STATS GRID ──────────────────────────── */
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;}
+.stat-box{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px 10px;text-align:center;transition:transform 0.2s,background 0.4s;}
+.stat-box:hover{transform:scale(1.03);}
+body.light .stat-box{box-shadow:0 2px 12px var(--shadow);}
+.stat-val{font-size:24px;font-weight:800;}
+.stat-lbl{font-size:10px;color:var(--muted);margin-top:3px;letter-spacing:0.5px;}
+
+/* ── DONUT ───────────────────────────────── */
+.donut-wrap{position:relative;width:160px;height:160px;margin:0 auto;}
+.donut-wrap svg{transform:rotate(-90deg);}
+.donut-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.donut-pct{font-size:30px;font-weight:800;color:var(--title-color);}
+.donut-lbl{font-size:11px;color:var(--muted);}
+
+/* ── WEEKLY CHART ────────────────────────── */
+.chart-bar-wrap{display:flex;align-items:flex-end;gap:8px;height:100px;padding:0 4px;}
+.chart-bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;}
+.chart-bar{width:100%;border-radius:6px 6px 0 0;transition:height 0.6s cubic-bezier(0.34,1.2,0.64,1);min-height:4px;animation:barGrow 0.7s ease both;cursor:pointer;}
+.chart-bar:hover{filter:brightness(1.15);}
+.chart-day{font-size:10px;color:var(--muted);}
+.chart-pct{font-size:9px;font-weight:700;}
+
+/* ── TOGGLE ──────────────────────────────── */
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border);}
+.toggle{width:46px;height:26px;background:var(--card2);border-radius:13px;position:relative;cursor:pointer;transition:background 0.25s;border:1.5px solid var(--border2);}
+.toggle.on{background:var(--accent);border-color:var(--accent);}
+.toggle::after{content:'';position:absolute;width:18px;height:18px;background:#fff;border-radius:50%;top:3px;left:3px;transition:transform 0.25s cubic-bezier(0.34,1.56,0.64,1);box-shadow:0 1px 4px rgba(0,0,0,0.3);}
+.toggle.on::after{transform:translateX(20px);}
+
+/* ── TIMER ───────────────────────────────── */
+.timer-display{font-size:52px;font-weight:800;color:var(--title-color);text-align:center;letter-spacing:4px;font-variant-numeric:tabular-nums;}
+.timer-ring{position:relative;width:180px;height:180px;margin:0 auto 16px;}
+.timer-ring svg{transform:rotate(-90deg);}
+.timer-ring-center{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;}
+
+/* ── HEALTH ──────────────────────────────── */
+.q-card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:24px;margin-bottom:12px;animation:fadeUp 0.4s ease;transition:background 0.4s;}
+body.light .q-card{box-shadow:0 2px 16px var(--shadow);}
+.q-title{font-size:18px;font-weight:700;color:var(--title-color);margin-bottom:20px;line-height:1.4;}
+.q-options{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.q-opt{background:var(--card2);border:2px solid var(--border2);border-radius:14px;padding:12px 14px;cursor:pointer;transition:all 0.2s;font-size:13px;font-weight:600;text-align:center;color:var(--text);}
+.q-opt:hover{border-color:var(--accent);color:var(--accent);transform:scale(1.02);}
+.q-opt.selected{background:color-mix(in srgb,var(--accent) 15%,transparent);border-color:var(--accent);color:var(--accent);}
+
+.macro-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+.macro-card{background:var(--card2);border-radius:16px;padding:14px;text-align:center;transition:transform 0.2s,background 0.4s;}
+.macro-card:hover{transform:scale(1.02);}
+body.light .macro-card{border:1px solid var(--border);box-shadow:0 1px 8px var(--shadow);}
+.macro-val{font-size:20px;font-weight:800;}
+.macro-unit{font-size:10px;color:var(--muted);margin-top:2px;}
+.macro-lbl{font-size:11px;color:var(--muted);margin-top:4px;letter-spacing:0.5px;font-weight:700;}
+.macro-bar-track{background:color-mix(in srgb,var(--muted) 20%,transparent);border-radius:4px;height:6px;margin-top:8px;overflow:hidden;}
+.macro-bar-fill{height:100%;border-radius:4px;transition:width 0.8s cubic-bezier(0.34,1.2,0.64,1);}
+
+.food-item{display:flex;justify-content:space-between;align-items:center;padding:11px 14px;background:var(--card2);border-radius:14px;margin-bottom:8px;animation:fadeUp 0.3s ease;transition:all 0.2s;}
+.food-item:hover{filter:brightness(0.97);}
+body.light .food-item{border:1px solid var(--border);}
+
+.steps{display:flex;gap:6px;margin-bottom:24px;}
+.step{flex:1;height:4px;border-radius:4px;background:var(--border2);transition:background 0.4s;}
+.step.done{background:var(--accent);}
+
+/* ── ALERT ───────────────────────────────── */
+.alert-wrap{position:fixed;top:16px;right:60px;z-index:400;display:flex;flex-direction:column;gap:8px;pointer-events:none;}
+.alert{background:var(--danger);color:#fff;padding:12px 18px;border-radius:14px;font-size:13px;font-weight:700;box-shadow:0 4px 24px #ff475760;animation:popIn 0.3s cubic-bezier(0.34,1.56,0.64,1);max-width:240px;}
+.alert.success{background:linear-gradient(135deg,var(--accent2),#00b87a);color:#fff;}
+.alert.info{background:var(--accent);color:#fff;}
+
+/* ── CONFETTI ────────────────────────────── */
+.confetti-piece{position:fixed;width:8px;height:8px;border-radius:2px;pointer-events:none;z-index:500;animation:confetti 0.8s ease forwards;}
+
+/* ── FOOD SUGG ───────────────────────────── */
+#foodSugg{display:none;position:absolute;top:50px;left:0;right:70px;background:var(--food-sugg-bg);border:1px solid var(--border2);border-radius:16px;z-index:10;max-height:240px;overflow-y:auto;box-shadow:0 8px 32px var(--shadow);animation:fadeUp 0.2s ease;transition:background 0.4s;}
+#foodSugg .sugg-item{padding:11px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border);transition:background 0.15s;color:var(--text);}
+#foodSugg .sugg-item:hover{background:var(--card2);}
+#foodSugg .sugg-item:last-child{border-bottom:none;}
+</style>
+</head>
+<body>
+
+<div class="alert-wrap" id="alertWrap"></div>
+<button class="theme-btn" id="themeBtn" onclick="toggleTheme()" title="Toggle Light/Dark mode">🌙</button>
+
+<!-- ═══════════════════════════════════ HABITS PAGE -->
+<div class="page active" id="page-habits">
+  <div class="page-header fade-up">
+    <div>
+      <div class="page-title">🎯 My Habits</div>
+      <div class="page-sub" id="habitDate"></div>
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="openAddHabit()" style="animation:pulse 2s infinite;">+ New</button>
+  </div>
+
+  <div class="stats-row fade-up fade-up-d1">
+    <div class="stat-box"><div class="stat-val" id="hDone" style="color:var(--accent2)">0</div><div class="stat-lbl">DONE</div></div>
+    <div class="stat-box"><div class="stat-val" id="hTotal" style="color:var(--accent)">0</div><div class="stat-lbl">TOTAL</div></div>
+    <div class="stat-box"><div class="stat-val" id="hStreak" style="color:var(--yellow)">0🔥</div><div class="stat-lbl">STREAK</div></div>
+  </div>
+
+  <!-- DONUT + WEEKLY CHART side by side -->
+  <div class="card fade-up fade-up-d2">
+    <div class="card-title">TODAY'S PROGRESS</div>
+    <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;">
+      <!-- Donut -->
+      <div class="donut-wrap" style="flex-shrink:0;">
+        <svg width="160" height="160" viewBox="0 0 160 160">
+          <circle cx="80" cy="80" r="60" fill="none" stroke="#1e1e32" stroke-width="14"/>
+          <circle id="donutFill" cx="80" cy="80" r="60" fill="none" stroke="var(--accent2)" stroke-width="14"
+            stroke-dasharray="377" stroke-dashoffset="377" stroke-linecap="round" style="transition:stroke-dashoffset 0.8s cubic-bezier(0.34,1.2,0.64,1)"/>
+        </svg>
+        <div class="donut-center">
+          <div class="donut-pct" id="donutPct">0%</div>
+          <div class="donut-lbl">Done</div>
+        </div>
+      </div>
+      <!-- Legend -->
+      <div style="flex:1;min-width:120px;">
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="width:10px;height:10px;border-radius:50%;background:var(--accent2);flex-shrink:0;"></div>
+            <span style="font-size:13px;color:var(--muted);">Done</span>
+            <span id="donutDone" style="margin-left:auto;font-weight:800;color:var(--accent2);font-size:16px;">0</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="width:10px;height:10px;border-radius:50%;background:var(--accent);flex-shrink:0;"></div>
+            <span style="font-size:13px;color:var(--muted);">Pending</span>
+            <span id="donutPending" style="margin-left:auto;font-weight:800;color:var(--accent);font-size:16px;">0</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="width:10px;height:10px;border-radius:50%;background:var(--danger);flex-shrink:0;"></div>
+            <span style="font-size:13px;color:var(--muted);">Overdue</span>
+            <span id="donutOverdue" style="margin-left:auto;font-weight:800;color:var(--danger);font-size:16px;">0</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WEEKLY PERFORMANCE CHART -->
+  <div class="card fade-up fade-up-d3">
+    <div class="card-title">📊 WEEKLY PERFORMANCE</div>
+    <div class="chart-bar-wrap" id="weeklyChart"></div>
+    <div style="text-align:center;margin-top:8px;font-size:11px;color:var(--muted);">Daily completion % over last 7 days</div>
+  </div>
+
+  <div id="habitList"></div>
+  <div id="habitEmpty" style="display:none;text-align:center;color:var(--muted);padding:50px 20px 20px;">
+    <div style="font-size:48px;margin-bottom:12px;">🌱</div>
+    <div style="font-size:16px;font-weight:700;color:#fff;margin-bottom:8px;">No habits yet</div>
+    <div style="font-size:13px;">Tap <b style="color:var(--accent);">+ New</b> to create your first habit!</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════ HEALTH PAGE -->
+<div class="page" id="page-health">
+  <div id="healthOnboard" style="display:none;">
+    <div class="page-header">
+      <div><div class="page-title">💪 Health Setup</div><div class="page-sub">Answer a few questions</div></div>
+    </div>
+    <div class="steps" id="onboardSteps"></div>
+    <div id="onboardContent"></div>
+  </div>
+  <div id="healthDash" style="display:none;">
+    <div class="page-header fade-up">
+      <div><div class="page-title">💪 Health</div><div class="page-sub" id="healthGoalLabel"></div></div>
+      <button class="btn btn-ghost btn-sm" onclick="resetHealth()">Reset</button>
+    </div>
+    <div id="bmiCard" class="card fade-up fade-up-d1"></div>
+    <div class="card fade-up fade-up-d2">
+      <div class="card-title">DAILY NUTRITION TARGETS</div>
+      <div class="macro-grid" id="macroGrid"></div>
+      <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:4px;">Values update as you log food below ↓</div>
+    </div>
+    <div class="card fade-up fade-up-d3">
+      <div class="card-title">🍽️ FOOD I ATE TODAY</div>
+      <div style="display:flex;gap:8px;margin-bottom:12px;position:relative;">
+        <input type="text" id="foodInput" placeholder="Type food name (e.g. roti, burger, egg)..." autocomplete="off" oninput="showFoodSugg()" onkeydown="if(event.key==='Enter')addFoodManual()"/>
+        <button class="btn btn-success btn-sm" onclick="addFoodManual()" style="white-space:nowrap;flex-shrink:0;">Add</button>
+        <div id="foodSugg"></div>
+      </div>
+      <div id="foodLog"></div>
+      <div id="foodEmpty" style="text-align:center;color:var(--muted);font-size:13px;padding:24px 0;">
+        <div style="font-size:32px;margin-bottom:8px;">🥗</div>
+        No food logged yet. Start adding meals!
+      </div>
+      <div id="foodTotalRow" style="display:none;background:var(--card2);border-radius:14px;padding:12px 16px;margin-top:4px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:13px;font-weight:700;color:#fff;">Total Today</span>
+          <span id="foodTotalCal" style="font-size:18px;font-weight:800;color:var(--yellow);">0 kcal</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════ BOTTOM NAV -->
+<nav class="bottom-nav">
+  <button class="nav-btn active" onclick="switchPage('habits')" id="nav-habits">
+    <span class="ni">🎯</span>HABITS
+  </button>
+  <button class="nav-btn" onclick="switchPage('health')" id="nav-health">
+    <span class="ni">💪</span>HEALTH
+  </button>
+</nav>
+
+<!-- ═══════════════════════════════════ MODAL: ADD HABIT -->
+<div class="modal-bg" id="addHabitModal">
+  <div class="modal">
+    <h2 id="addHabitTitle">New Habit / Task</h2>
+    <p>Set a daily task or create a repeating habit</p>
+    <div class="input-label">TASK NAME</div>
+    <input type="text" id="hName" placeholder="e.g. Morning walk, Read 30 mins..." style="margin-bottom:14px;"/>
+    <div class="input-label">TYPE</div>
+    <div style="display:flex;gap:8px;margin-bottom:16px;">
+      <div class="q-opt selected" id="typeTask" onclick="selectType('task')" style="flex:1;">📋 One-time Task</div>
+      <div class="q-opt" id="typeHabit" onclick="selectType('habit')" style="flex:1;">🔁 Daily Habit</div>
+    </div>
+    <div class="toggle-row">
+      <div><div style="font-size:14px;font-weight:700;">⏱ Fixed Timer</div><div style="font-size:11px;color:var(--muted);">Countdown timer while doing task</div></div>
+      <button class="toggle" id="timerToggle" onclick="toggleField('timer')"></button>
+    </div>
+    <div id="timerFields" style="display:none;padding:12px 0 4px;">
+      <div style="display:flex;gap:10px;">
+        <div style="flex:1;"><div class="input-label">MINUTES</div><input type="number" id="timerMins" placeholder="25" min="1" max="180"/></div>
+        <div style="flex:1;"><div class="input-label">SECONDS</div><input type="number" id="timerSecs" placeholder="0" min="0" max="59"/></div>
+      </div>
+    </div>
+    <div class="toggle-row">
+      <div><div style="font-size:14px;font-weight:700;">⏰ Deadline</div><div style="font-size:11px;color:var(--muted);">Mark overdue after this time</div></div>
+      <button class="toggle" id="deadlineToggle" onclick="toggleField('deadline')"></button>
+    </div>
+    <div id="deadlineField" style="display:none;padding:12px 0 4px;">
+      <div class="input-label">COMPLETE BY</div>
+      <input type="time" id="deadlineTime"/>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="saveHabit()">Save Habit</button>
+      <button class="btn btn-ghost" onclick="closeModal('addHabitModal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════ MODAL: TIMER -->
+<div class="modal-bg" id="timerModal">
+  <div class="modal" style="text-align:center;">
+    <h2 id="timerModalTitle" style="margin-bottom:4px;">Focus Timer</h2>
+    <p id="timerModalSub">Stay focused until the timer ends!</p>
+    <div class="timer-ring">
+      <svg width="180" height="180" viewBox="0 0 180 180">
+        <circle cx="90" cy="90" r="76" fill="none" stroke="#1e1e32" stroke-width="10"/>
+        <circle id="timerRingFill" cx="90" cy="90" r="76" fill="none" stroke="var(--accent)" stroke-width="10"
+          stroke-dasharray="477.5" stroke-dashoffset="0" stroke-linecap="round"
+          style="transition:stroke-dashoffset 1s linear,stroke 0.5s;"/>
+      </svg>
+      <div class="timer-ring-center">
+        <div class="timer-display" id="timerDisplay">00:00</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px;" id="timerStatus">Ready</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:center;">
+      <button class="btn btn-primary" id="timerStartBtn" onclick="timerAction()" style="min-width:120px;">▶ Start</button>
+      <button class="btn btn-ghost" onclick="resetTimer()">↺</button>
+      <button class="btn btn-ghost" onclick="closeModal('timerModal')">✕</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════ MODAL: CONFIRM -->
+<div class="modal-bg" id="confirmModal">
+  <div class="modal" style="border-radius:24px;padding:28px 24px 32px;max-width:360px;margin:auto;">
+    <div style="font-size:36px;text-align:center;margin-bottom:14px;" id="confirmIcon">⚠️</div>
+    <h2 style="text-align:center;font-size:18px;margin-bottom:10px;" id="confirmMsg">Are you sure?</h2>
+    <div class="modal-footer" style="margin-top:20px;">
+      <button class="btn btn-danger" id="confirmYesBtn" style="flex:1;padding:14px;font-size:14px;background:#ff4757;color:#fff;border:none;">Yes, Delete</button>
+      <button class="btn btn-ghost" onclick="closeModal('confirmModal')" style="flex:1;padding:14px;font-size:14px;">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════
+// THEME TOGGLE
+// ════════════════════════════════════════════════════════
+function toggleTheme(){
+  const isLight=document.body.classList.toggle('light');
+  document.getElementById('themeBtn').textContent=isLight?'🌙':'☀️';
+  localStorage.setItem('hf_theme',isLight?'light':'dark');
+}
+(function(){
+  if(localStorage.getItem('hf_theme')==='light'){
+    document.body.classList.add('light');
+    document.getElementById('themeBtn').textContent='🌙';
+  }
+})();
+
+// ════════════════════════════════════════════════════════
+// FOOD DATABASE — 280+ items (Indian + Fast food + International)
+// ════════════════════════════════════════════════════════
+const FOODS=[
+// ── INDIAN BREADS & RICE ────────────────────────────────
+{n:'Roti (1 piece)',cal:71,p:2.7,c:14.5,f:0.4,v:0.1},
+{n:'Paratha (1 piece)',cal:130,p:3,c:18,f:5.5,v:0.1},
+{n:'Puri (1 piece)',cal:100,p:2,c:12,f:5,v:0.1},
+{n:'Naan (1 piece)',cal:170,p:6,c:30,f:3.5,v:0.1},
+{n:'Bhatura (1 piece)',cal:200,p:5,c:28,f:8,v:0.1},
+{n:'Rice (1 cup cooked)',cal:206,p:4.3,c:44.5,f:0.4,v:0.1},
+{n:'Biryani (1 plate)',cal:500,p:22,c:65,f:18,v:1.2},
+{n:'Jeera Rice (1 plate)',cal:280,p:5,c:52,f:6,v:0.3},
+{n:'Pulao (1 plate)',cal:300,p:6,c:55,f:7,v:0.4},
+{n:'Khichdi (1 bowl)',cal:190,p:8,c:35,f:2,v:0.8},
+// ── INDIAN CURRIES & DAL ────────────────────────────────
+{n:'Dal Tadka (1 bowl)',cal:230,p:14,c:40,f:0.9,v:1.2},
+{n:'Dal Makhani (1 bowl)',cal:280,p:12,c:35,f:10,v:0.9},
+{n:'Rajma (1 cup)',cal:225,p:15,c:40,f:0.9,v:1.3},
+{n:'Chole (1 cup)',cal:270,p:14,c:45,f:4,v:1.5},
+{n:'Palak Paneer (1 bowl)',cal:260,p:14,c:10,f:18,v:2.5},
+{n:'Paneer Butter Masala (1 bowl)',cal:350,p:16,c:15,f:26,v:1.2},
+{n:'Chicken Curry (1 bowl)',cal:280,p:28,c:8,f:15,v:0.8},
+{n:'Mutton Curry (1 bowl)',cal:320,p:30,c:6,f:20,v:0.9},
+{n:'Fish Curry (1 bowl)',cal:250,p:30,c:6,f:12,v:1.1},
+{n:'Egg Curry (2 eggs)',cal:220,p:14,c:8,f:15,v:0.9},
+{n:'Aloo Sabzi (1 bowl)',cal:150,p:3,c:28,f:4,v:0.5},
+{n:'Baingan Bharta (1 bowl)',cal:120,p:3,c:14,f:6,v:1.8},
+{n:'Mix Veg Sabzi (1 bowl)',cal:140,p:4,c:18,f:6,v:2.2},
+{n:'Paneer (100g)',cal:265,p:18,c:3.4,f:20,v:0.3},
+// ── INDIAN SNACKS & BREAKFAST ───────────────────────────
+{n:'Samosa (1 piece)',cal:150,p:3,c:18,f:8,v:0.2},
+{n:'Idli (1 piece)',cal:39,p:2,c:8,f:0.2,v:0.1},
+{n:'Dosa (1 piece)',cal:168,p:3.9,c:28,f:4.9,v:0.2},
+{n:'Masala Dosa (1 piece)',cal:230,p:5,c:35,f:8,v:0.5},
+{n:'Uttapam (1 piece)',cal:170,p:5,c:28,f:4,v:0.6},
+{n:'Poha (1 plate)',cal:180,p:4,c:32,f:4,v:0.6},
+{n:'Upma (1 plate)',cal:220,p:5,c:35,f:6,v:0.5},
+{n:'Dhokla (2 pieces)',cal:80,p:4,c:14,f:1.5,v:0.3},
+{n:'Pakora (4 pieces)',cal:200,p:5,c:22,f:10,v:0.4},
+{n:'Kachori (1 piece)',cal:200,p:4,c:24,f:10,v:0.2},
+{n:'Aloo Tikki (1 piece)',cal:120,p:2,c:20,f:4,v:0.4},
+{n:'Pav Bhaji (1 plate)',cal:400,p:10,c:60,f:14,v:1.5},
+{n:'Vada Pav (1 piece)',cal:290,p:7,c:42,f:10,v:0.4},
+{n:'Medu Vada (1 piece)',cal:75,p:3,c:9,f:3,v:0.2},
+{n:'Rava Dosa (1 piece)',cal:140,p:3,c:22,f:4,v:0.2},
+{n:'Egg Bhurji (2 eggs)',cal:210,p:14,c:4,f:15,v:0.9},
+// ── INDIAN DRINKS & DESSERTS ────────────────────────────
+{n:'Lassi (1 glass)',cal:150,p:8,c:18,f:5,v:0.4},
+{n:'Masala Chai (1 cup)',cal:50,p:1.5,c:7,f:1.5,v:0.1},
+{n:'Nimbu Pani (1 glass)',cal:40,p:0.2,c:10,f:0,v:1.5},
+{n:'Buttermilk / Chaas (1 glass)',cal:40,p:3,c:4,f:1,v:0.3},
+{n:'Mango Lassi (1 glass)',cal:200,p:6,c:35,f:4,v:1.2},
+{n:'Gulab Jamun (1 piece)',cal:175,p:2,c:32,f:5,v:0},
+{n:'Jalebi (2 pieces)',cal:150,p:2,c:32,f:3,v:0},
+{n:'Halwa (1 bowl)',cal:300,p:4,c:48,f:11,v:0.2},
+{n:'Kheer (1 bowl)',cal:200,p:6,c:35,f:5,v:0.4},
+{n:'Rasgulla (1 piece)',cal:100,p:3,c:20,f:1,v:0},
+{n:'Ladoo (1 piece)',cal:180,p:3,c:28,f:7,v:0.1},
+{n:'Barfi (1 piece)',cal:120,p:3,c:18,f:5,v:0.1},
+// ── FAST FOOD & BURGERS ─────────────────────────────────
+{n:'Burger (regular)',cal:350,p:17,c:30,f:17,v:0.6},
+{n:'Double Burger',cal:550,p:30,c:42,f:28,v:0.8},
+{n:'Chicken Burger',cal:400,p:25,c:38,f:16,v:0.7},
+{n:'Veggie Burger',cal:300,p:12,c:40,f:10,v:1.2},
+{n:'McAloo Tikki Burger',cal:340,p:8,c:48,f:13,v:0.8},
+{n:'Maharaja Mac',cal:490,p:25,c:44,f:22,v:0.7},
+{n:'French Fries (medium)',cal:320,p:4,c:43,f:15,v:0.4},
+{n:'Pizza (1 slice cheese)',cal:285,p:12,c:36,f:10,v:0.4},
+{n:'Pizza (1 slice pepperoni)',cal:310,p:14,c:34,f:13,v:0.3},
+{n:'Chicken Wings (6 pieces)',cal:430,p:36,c:4,f:29,v:0.5},
+{n:'Hot Dog (1)',cal:290,p:11,c:26,f:16,v:0.2},
+{n:'Fried Chicken (1 piece)',cal:320,p:22,c:14,f:20,v:0.4},
+{n:'Nuggets (6 pieces)',cal:270,p:15,c:18,f:16,v:0.3},
+{n:'Sandwich (egg)',cal:250,p:13,c:30,f:8,v:0.8},
+{n:'Sandwich (chicken)',cal:320,p:22,c:32,f:10,v:0.7},
+{n:'Club Sandwich',cal:400,p:25,c:38,f:15,v:1.0},
+{n:'Shawarma (chicken)',cal:420,p:28,c:42,f:15,v:1.2},
+{n:'Shawarma (beef)',cal:460,p:30,c:40,f:18,v:1.0},
+{n:'Wrap / Frankie (chicken)',cal:380,p:22,c:42,f:12,v:0.9},
+{n:'Tacos (2 pieces)',cal:330,p:18,c:30,f:14,v:1.0},
+{n:'Nachos with cheese',cal:400,p:9,c:50,f:18,v:0.5},
+{n:'Momos (6 pieces steamed)',cal:200,p:10,c:30,f:4,v:0.5},
+{n:'Momos (6 pieces fried)',cal:300,p:10,c:32,f:14,v:0.4},
+{n:'Spring Roll (1 piece)',cal:150,p:4,c:20,f:6,v:0.5},
+{n:'Fried Rice (1 plate)',cal:350,p:10,c:60,f:9,v:0.7},
+{n:'Hakka Noodles (1 plate)',cal:400,p:10,c:65,f:11,v:0.6},
+{n:'Manchurian (1 plate)',cal:320,p:12,c:35,f:14,v:0.8},
+{n:'Chowmein (1 plate)',cal:380,p:11,c:62,f:10,v:0.7},
+{n:'Maggi Noodles (1 pack)',cal:350,p:7,c:50,f:13,v:0.2},
+// ── EGGS & DAIRY ────────────────────────────────────────
+{n:'Boiled Egg (1)',cal:78,p:6,c:0.6,f:5,v:0.8},
+{n:'Fried Egg (1)',cal:90,p:6,c:0.4,f:7,v:0.8},
+{n:'Omelette (2 eggs)',cal:180,p:12,c:2,f:14,v:1.0},
+{n:'Scrambled Eggs (2)',cal:200,p:14,c:3,f:15,v:1.0},
+{n:'Milk (1 glass 250ml)',cal:150,p:8,c:12,f:8,v:1.5},
+{n:'Curd / Yogurt (1 bowl)',cal:100,p:17,c:6,f:0.7,v:0.5},
+{n:'Cheese slice (1)',cal:80,p:5,c:1,f:6,v:0.2},
+{n:'Butter (1 tsp)',cal:35,p:0,c:0,f:4,v:0.1},
+{n:'Ghee (1 tsp)',cal:45,p:0,c:0,f:5,v:0.1},
+// ── FRUITS ──────────────────────────────────────────────
+{n:'Banana (1 medium)',cal:105,p:1.3,c:27,f:0.4,v:0.7},
+{n:'Apple (1 medium)',cal:95,p:0.5,c:25,f:0.3,v:1.2},
+{n:'Mango (1 cup)',cal:100,p:1.4,c:25,f:0.6,v:3.0},
+{n:'Orange (1 medium)',cal:62,p:1.2,c:15,f:0.2,v:4.0},
+{n:'Grapes (1 cup)',cal:104,p:1.1,c:27,f:0.2,v:0.8},
+{n:'Watermelon (1 cup)',cal:46,p:0.9,c:11,f:0.2,v:1.0},
+{n:'Papaya (1 cup)',cal:55,p:0.9,c:14,f:0.2,v:3.5},
+{n:'Guava (1 medium)',cal:68,p:2.6,c:14,f:1,v:5.0},
+{n:'Pomegranate (1 cup)',cal:83,p:1.7,c:19,f:1.2,v:2.0},
+{n:'Strawberry (1 cup)',cal:50,p:1,c:12,f:0.5,v:4.5},
+// ── VEGETABLES ──────────────────────────────────────────
+{n:'Potato (1 medium boiled)',cal:161,p:4.3,c:37,f:0.2,v:0.7},
+{n:'Salad bowl (mixed)',cal:60,p:2,c:10,f:1,v:3.5},
+{n:'Corn (1 cup)',cal:132,p:5,c:29,f:1.8,v:0.9},
+{n:'Broccoli (1 cup)',cal:55,p:3.7,c:11,f:0.6,v:4.0},
+{n:'Spinach (1 cup raw)',cal:7,p:0.9,c:1.1,f:0.1,v:3.5},
+// ── GRAINS & CEREALS ────────────────────────────────────
+{n:'Oats (1 bowl cooked)',cal:300,p:10,c:54,f:6,v:0.8},
+{n:'Bread white (2 slices)',cal:160,p:5,c:30,f:2,v:0.3},
+{n:'Brown bread (2 slices)',cal:140,p:6,c:28,f:2,v:0.6},
+{n:'Cornflakes (1 bowl)',cal:200,p:4,c:44,f:0.5,v:1.5},
+{n:'Muesli (1 bowl)',cal:280,p:8,c:55,f:5,v:1.2},
+{n:'Pasta (1 cup cooked)',cal:220,p:8,c:43,f:1.3,v:0.3},
+// ── PROTEINS & MEAT ─────────────────────────────────────
+{n:'Chicken Breast (100g)',cal:165,p:31,c:0,f:3.6,v:0.5},
+{n:'Salmon (100g)',cal:208,p:20,c:0,f:13,v:1.8},
+{n:'Tuna (1 can)',cal:100,p:22,c:0,f:0.5,v:0.8},
+{n:'Mutton (100g)',cal:250,p:26,c:0,f:16,v:0.5},
+{n:'Prawns (100g)',cal:99,p:24,c:0,f:0.3,v:0.7},
+// ── SNACKS & SWEETS ─────────────────────────────────────
+{n:'Almonds (20g)',cal:116,p:4,c:4,f:10,v:0.6},
+{n:'Peanuts (20g)',cal:113,p:5,c:4,f:9,v:0.4},
+{n:'Cashews (20g)',cal:110,p:3,c:6,f:9,v:0.3},
+{n:'Dark Chocolate (1 square)',cal:60,p:1,c:7,f:3.5,v:0.1},
+{n:'Ice Cream (1 scoop)',cal:137,p:2.3,c:16,f:7,v:0.2},
+{n:'Cake slice',cal:350,p:5,c:50,f:14,v:0.2},
+{n:'Biscuits (4 pieces)',cal:180,p:3,c:28,f:7,v:0.1},
+{n:'Chips packet (30g)',cal:150,p:2,c:18,f:8,v:0.1},
+{n:'Popcorn (1 cup)',cal:55,p:1,c:11,f:0.7,v:0.1},
+// ── DRINKS ──────────────────────────────────────────────
+{n:'Water (1 glass)',cal:0,p:0,c:0,f:0,v:0},
+{n:'Black Coffee',cal:5,p:0.3,c:0,f:0,v:0.1},
+{n:'Coffee with milk',cal:60,p:3,c:6,f:3,v:0.3},
+{n:'Green Tea',cal:2,p:0,c:0,f:0,v:0.2},
+{n:'Orange Juice (1 glass)',cal:112,p:1.7,c:26,f:0.5,v:5.0},
+{n:'Coca Cola (1 can)',cal:140,p:0,c:39,f:0,v:0},
+{n:'Pepsi (1 can)',cal:150,p:0,c:41,f:0,v:0},
+{n:'Energy Drink (1 can)',cal:110,p:1,c:29,f:0,v:0.5},
+{n:'Protein Shake',cal:200,p:30,c:10,f:3,v:0.5},
+{n:'Coconut Water (1 glass)',cal:46,p:1.7,c:9,f:0.5,v:0.6},
+{n:'Whole Milk (1 glass)',cal:150,p:8,c:12,f:8,v:1.5},
+// ── EXTRA INDIAN ────────────────────────────────────────
+{n:'Aloo Paratha (1)',cal:200,p:4,c:28,f:8,v:0.3},
+{n:'Gobi Paratha (1)',cal:185,p:4,c:26,f:7,v:0.8},
+{n:'Methi Paratha (1)',cal:175,p:4.5,c:25,f:6.5,v:1.5},
+{n:'Dahi (1 bowl)',cal:98,p:11,c:7,f:3,v:0.5},
+{n:'Raita (1 bowl)',cal:80,p:5,c:9,f:2.5,v:0.8},
+{n:'Kadhi (1 bowl)',cal:150,p:5,c:18,f:6,v:0.6},
+{n:'Sarson da Saag (1 bowl)',cal:130,p:5,c:15,f:6,v:4.5},
+{n:'Makki di Roti (1)',cal:120,p:3,c:22,f:3,v:0.4},
+{n:'Besan Chilla (1)',cal:130,p:7,c:16,f:4,v:0.6},
+{n:'Rava Idli (1)',cal:70,p:2.5,c:12,f:1.5,v:0.2},
+{n:'Pongal (1 bowl)',cal:280,p:7,c:48,f:8,v:0.5},
+{n:'Bisi Bele Bath (1 bowl)',cal:300,p:9,c:52,f:7,v:1.2},
+{n:'Curd Rice (1 bowl)',cal:220,p:7,c:38,f:5,v:0.5},
+{n:'Lemon Rice (1 plate)',cal:280,p:5,c:52,f:6,v:0.8},
+{n:'Tomato Rice (1 plate)',cal:290,p:5.5,c:54,f:6.5,v:1.5},
+{n:'Egg Fried Rice (1 plate)',cal:380,p:14,c:58,f:10,v:0.8},
+{n:'Chicken Fried Rice (1 plate)',cal:420,p:20,c:58,f:12,v:0.8},
+{n:'Paneer Tikka (4 pieces)',cal:280,p:18,c:8,f:19,v:0.7},
+{n:'Chicken Tikka (4 pieces)',cal:240,p:30,c:4,f:12,v:0.6},
+{n:'Seekh Kebab (2 pieces)',cal:220,p:22,c:6,f:12,v:0.5},
+{n:'Tandoori Chicken (1 leg)',cal:290,p:38,c:4,f:14,v:0.7},
+{n:'Butter Chicken (1 bowl)',cal:320,p:28,c:12,f:18,v:0.9},
+{n:'Chicken Biryani (1 plate)',cal:550,p:32,c:65,f:18,v:1.3},
+{n:'Mutton Biryani (1 plate)',cal:600,p:35,c:65,f:22,v:1.2},
+{n:'Veg Biryani (1 plate)',cal:420,p:9,c:72,f:12,v:1.5},
+{n:'Masala Chai with sugar',cal:65,p:2,c:10,f:2,v:0.1},
+{n:'Nimbu Soda',cal:55,p:0,c:14,f:0,v:1.2},
+{n:'Sugarcane Juice (1 glass)',cal:120,p:0.2,c:30,f:0.2,v:0.5},
+{n:'Aam Panna (1 glass)',cal:80,p:0.5,c:20,f:0,v:1.5},
+{n:'Jaljeera (1 glass)',cal:30,p:0.5,c:7,f:0,v:0.3},
+// ── EXTRA FAST FOOD ─────────────────────────────────────
+{n:'Cheese Pizza (2 slices)',cal:570,p:24,c:72,f:20,v:0.8},
+{n:'Paneer Pizza (2 slices)',cal:540,p:22,c:70,f:19,v:1.0},
+{n:'BBQ Chicken Pizza (2 slices)',cal:600,p:30,c:70,f:22,v:0.9},
+{n:'Margherita Pizza (2 slices)',cal:500,p:20,c:68,f:16,v:1.0},
+{n:'Crispy Chicken Burger',cal:480,p:26,c:46,f:20,v:0.7},
+{n:'Paneer Burger',cal:380,p:14,c:44,f:16,v:0.9},
+{n:'Aloo Burger',cal:340,p:7,c:50,f:13,v:0.8},
+{n:'Cheese Fries (large)',cal:480,p:8,c:58,f:24,v:0.4},
+{n:'Onion Rings (6 pcs)',cal:280,p:4,c:36,f:14,v:0.3},
+{n:'Coleslaw (side)',cal:120,p:1,c:14,f:7,v:0.8},
+{n:'Garlic Bread (2 slices)',cal:200,p:5,c:30,f:8,v:0.3},
+{n:'Pasta in White Sauce',cal:380,p:12,c:48,f:16,v:0.5},
+{n:'Pasta in Red Sauce',cal:320,p:11,c:52,f:8,v:1.2},
+{n:'Chicken Caesar Salad',cal:350,p:28,c:16,f:18,v:2.5},
+{n:'Greek Salad',cal:160,p:5,c:12,f:10,v:3.0},
+{n:'Paneer Wrap',cal:410,p:18,c:48,f:16,v:1.0},
+{n:'Egg Roll (1)',cal:290,p:12,c:38,f:10,v:0.8},
+{n:'Chilli Chicken (1 plate)',cal:350,p:30,c:14,f:18,v:0.9},
+{n:'Honey Chilli Potato',cal:320,p:4,c:48,f:13,v:0.6},
+{n:'Veg Manchow Soup',cal:80,p:3,c:14,f:1,v:1.0},
+{n:'Sweet Corn Soup',cal:100,p:3,c:18,f:2,v:0.8},
+// ── BREAKFAST ───────────────────────────────────────────
+{n:'Pancakes (2 medium)',cal:360,p:8,c:56,f:12,v:0.4},
+{n:'Waffles (1)',cal:310,p:7,c:48,f:11,v:0.3},
+{n:'French Toast (2 slices)',cal:300,p:10,c:36,f:13,v:0.6},
+{n:'Granola bar (1)',cal:190,p:4,c:28,f:7,v:0.4},
+{n:'Avocado Toast (1 slice)',cal:220,p:5,c:22,f:13,v:1.5},
+{n:'Smoothie bowl',cal:280,p:8,c:52,f:5,v:3.5},
+{n:'Greek Yogurt (100g)',cal:59,p:10,c:3.6,f:0.4,v:0.3},
+{n:'Peanut Butter (1 tbsp)',cal:94,p:4,c:3,f:8,v:0.2},
+{n:'Banana Shake (1 glass)',cal:250,p:8,c:42,f:6,v:0.8},
+{n:'Mango Shake (1 glass)',cal:280,p:6,c:50,f:7,v:2.0},
+{n:'Strawberry Smoothie',cal:180,p:5,c:35,f:2,v:4.0},
+];
+
+// ════════════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════════════
+let habits  = load('hf_habits',  []);
+let health  = load('hf_health',  null);
+let foodLog = load('hf_food_'+tKey(), []);
+let streaks = load('hf_streaks', {});
+let weekLog = load('hf_weeklog', {});
+
+function tKey(){ return new Date().toISOString().split('T')[0]; }
+function load(k,d){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):d; }catch{return d;} }
+function save(){
+  localStorage.setItem('hf_habits',  JSON.stringify(habits));
+  localStorage.setItem('hf_food_'+tKey(), JSON.stringify(foodLog));
+  localStorage.setItem('hf_streaks', JSON.stringify(streaks));
+  localStorage.setItem('hf_weeklog', JSON.stringify(weekLog));
+}
+function saveHealth(){ localStorage.setItem('hf_health',JSON.stringify(health)); }
+
+// midnight reset
+(function(){
+  const last=localStorage.getItem('hf_reset');
+  const today=tKey();
+  if(last!==today){
+    // log yesterday's completion for chart
+    if(last){
+      const done=habits.filter(h=>h.doneDate===last).length;
+      weekLog[last]={done,total:habits.length,pct:habits.length?Math.round(done/habits.length*100):0};
+    }
+    habits=habits.filter(h=>h.type!=='task'||h.doneDate===today);
+    foodLog=[];
+    localStorage.setItem('hf_food_'+today,'[]');
+    localStorage.setItem('hf_reset',today);
+    save();
+  }
+})();
+
+// ════════════════════════════════════════════════════════
+// NAV
+// ════════════════════════════════════════════════════════
+function switchPage(name){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  document.getElementById('nav-'+name).classList.add('active');
+  if(name==='health') initHealth();
+  if(name==='habits') renderHabits();
+}
+
+// ════════════════════════════════════════════════════════
+// HABITS
+// ════════════════════════════════════════════════════════
+let editId=null, timerOn=false, deadlineOn=false, selType='task';
+
+function openAddHabit(id){
+  editId=id||null; timerOn=false; deadlineOn=false; selType='task';
+  ['hName','timerMins','timerSecs','deadlineTime'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('timerFields').style.display='none';
+  document.getElementById('deadlineField').style.display='none';
+  document.getElementById('timerToggle').className='toggle';
+  document.getElementById('deadlineToggle').className='toggle';
+  document.getElementById('typeTask').classList.add('selected');
+  document.getElementById('typeHabit').classList.remove('selected');
+  document.getElementById('addHabitTitle').textContent=id?'Edit Habit':'New Habit / Task';
+  if(id){
+    const h=habits.find(x=>x.id===id);
+    if(h){
+      document.getElementById('hName').value=h.name;
+      selType=h.type;
+      document.getElementById('typeHabit').classList.toggle('selected',h.type==='habit');
+      document.getElementById('typeTask').classList.toggle('selected',h.type==='task');
+      if(h.timerTotal){timerOn=true;document.getElementById('timerToggle').className='toggle on';document.getElementById('timerFields').style.display='block';document.getElementById('timerMins').value=Math.floor(h.timerTotal/60);document.getElementById('timerSecs').value=h.timerTotal%60;}
+      if(h.deadline){deadlineOn=true;document.getElementById('deadlineToggle').className='toggle on';document.getElementById('deadlineField').style.display='block';document.getElementById('deadlineTime').value=h.deadline;}
+    }
+  }
+  document.getElementById('addHabitModal').classList.add('open');
+  setTimeout(()=>document.getElementById('hName').focus(),350);
+}
+
+function selectType(t){ selType=t; document.getElementById('typeTask').classList.toggle('selected',t==='task'); document.getElementById('typeHabit').classList.toggle('selected',t==='habit'); }
+function toggleField(type){
+  if(type==='timer'){ timerOn=!timerOn; document.getElementById('timerToggle').className='toggle'+(timerOn?' on':''); document.getElementById('timerFields').style.display=timerOn?'block':'none'; }
+  else { deadlineOn=!deadlineOn; document.getElementById('deadlineToggle').className='toggle'+(deadlineOn?' on':''); document.getElementById('deadlineField').style.display=deadlineOn?'block':'none'; }
+}
+
+function saveHabit(){
+  const name=document.getElementById('hName').value.trim();
+  if(!name) return showAlert('Please enter a task name!','danger');
+  const tt=timerOn?(parseInt(document.getElementById('timerMins').value)||0)*60+(parseInt(document.getElementById('timerSecs').value)||0):0;
+  const dl=deadlineOn?document.getElementById('deadlineTime').value:'';
+  if(editId){
+    const i=habits.findIndex(x=>x.id===editId);
+    if(i>=0) habits[i]={...habits[i],name,type:selType,timerTotal:tt,deadline:dl};
+  } else {
+    habits.push({id:Date.now()+'',name,type:selType,timerTotal:tt,deadline:dl,doneDate:'',streak:0,createdDate:tKey()});
+  }
+  save(); renderHabits(); closeModal('addHabitModal');
+  showAlert(editId?'Habit updated! ✅':'Habit added! 🎯','success');
+  editId=null;
+}
+
+function toggleDone(id){
+  const h=habits.find(x=>x.id===id);
+  if(!h) return;
+  const today=tKey();
+  if(h.doneDate===today){
+    h.doneDate='';
+  } else {
+    h.doneDate=today;
+    // streak
+    const yest=new Date(); yest.setDate(yest.getDate()-1);
+    const yKey=yest.toISOString().split('T')[0];
+    const last=streaks[id]||{streak:0,last:''};
+    h.streak=last.last===yKey?last.streak+1:1;
+    streaks[id]={streak:h.streak,last:today};
+    if(h.timerTotal){save();openTimerById(id);return;}
+    confettiBurst();
+    showAlert(h.name+' done! 🎉','success');
+  }
+  save(); renderHabits();
+}
+
+function deleteHabit(id){
+  showConfirm('Delete this habit? This cannot be undone.', ()=>{
+    habits=habits.filter(x=>x.id!==id);
+    save(); renderHabits();
+    showAlert('Habit deleted!','info');
+  });
+}
+
+function isOverdue(h){
+  if(!h.deadline||h.doneDate===tKey()) return false;
+  const [hh,mm]=h.deadline.split(':').map(Number);
+  const d=new Date(); d.setHours(hh,mm,0);
+  return new Date()>d;
+}
+
+function renderHabits(){
+  const today=tKey();
+  const done=habits.filter(h=>h.doneDate===today).length;
+  const total=habits.length;
+  const over=habits.filter(isOverdue).length;
+  const pct=total?Math.round(done/total*100):0;
+
+  document.getElementById('hDone').textContent=done;
+  document.getElementById('hTotal').textContent=total;
+  document.getElementById('donutPct').textContent=pct+'%';
+  document.getElementById('donutDone').textContent=done;
+  document.getElementById('donutPending').textContent=Math.max(0,total-done-over);
+  document.getElementById('donutOverdue').textContent=over;
+  document.getElementById('donutFill').style.strokeDashoffset=377-(377*(pct/100));
+  const maxStreak=habits.reduce((s,h)=>Math.max(s,h.streak||0),0);
+  document.getElementById('hStreak').textContent=maxStreak+'🔥';
+  document.getElementById('habitDate').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+
+  // weekly chart
+  const last7=Array.from({length:7},(_,i)=>{const d=new Date();d.setDate(d.getDate()-(6-i));return d.toISOString().split('T')[0];});
+  const chartData=last7.map(day=>{
+    if(day===today) return{day,pct,isToday:true};
+    const wl=weekLog[day];
+    return{day,pct:wl?wl.pct:0,isToday:false};
+  });
+  const maxPct=Math.max(...chartData.map(d=>d.pct),1);
+  document.getElementById('weeklyChart').innerHTML=chartData.map((d,i)=>{
+    const h=Math.max(4,(d.pct/maxPct)*90);
+    const dayLabel=new Date(d.day+'T12:00:00').toLocaleDateString('en-US',{weekday:'short'});
+    const clr=d.isToday?'var(--accent)':d.pct>=80?'var(--accent2)':d.pct>=50?'var(--yellow)':'#2a2a45';
+    return `<div class="chart-bar-col" style="animation-delay:${i*0.06}s">
+      <div style="font-size:10px;font-weight:700;color:${clr};">${d.pct>0?d.pct+'%':''}</div>
+      <div class="chart-bar" style="height:${h}px;background:${clr};animation-delay:${i*0.08}s;" title="${d.pct}% on ${d.day}"></div>
+      <div class="chart-day" style="color:${d.isToday?'var(--accent)':'var(--muted)'};font-weight:${d.isToday?700:400};">${dayLabel}</div>
+    </div>`;
+  }).join('');
+
+  if(!total){
+    document.getElementById('habitList').innerHTML='';
+    document.getElementById('habitEmpty').style.display='block';
+    return;
+  }
+  document.getElementById('habitEmpty').style.display='none';
+
+  const sorted=[...habits].sort((a,b)=>{
+    const ad=a.doneDate===today,bd=b.doneDate===today;
+    if(ad&&!bd)return 1; if(!ad&&bd)return -1; return 0;
+  });
+
+  document.getElementById('habitList').innerHTML=sorted.map((h,i)=>{
+    const isDone=h.doneDate===today, over=isOverdue(h);
+    const cls=isDone?'done':over?'overdue':'';
+    const typeBadge=h.type==='habit'?`<span class="badge badge-habit">🔁 HABIT</span>`:`<span class="badge badge-task">📋 TASK</span>`;
+    const statusBadge=isDone?`<span class="badge badge-done">✅ DONE</span>`:over?`<span class="badge badge-overdue">⚠️ OVERDUE</span>`:'';
+    const dl=h.deadline?`<span>⏰ ${h.deadline}</span>`:'';
+    const tm=h.timerTotal?`<span>⏱ ${Math.floor(h.timerTotal/60)}m</span>`:'';
+    const st=(h.streak>1)?`<span>🔥 ${h.streak}d</span>`:'';
+    return `<div class="habit-card ${cls}" style="animation-delay:${i*0.06}s">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div class="habit-check ${isDone?'done':''}" onclick="toggleDone('${h.id}')" title="${isDone?'Mark incomplete':'Mark complete'}">
+          ${isDone?'✓':''}
+        </div>
+        <div class="habit-info">
+          <div class="habit-name ${isDone?'done':''}">${h.name}</div>
+          <div class="habit-meta">${typeBadge}${statusBadge}${dl}${tm}${st}</div>
+        </div>
+        <div class="habit-actions">
+          ${h.timerTotal&&!isDone?`<button class="btn btn-ghost btn-sm" onclick="openTimerById('${h.id}')" title="Start timer">⏱</button>`:''}
+          <button class="btn btn-ghost btn-sm" onclick="openAddHabit('${h.id}')" title="Edit">✎</button>
+          <button class="btn btn-danger" onclick="deleteHabit('${h.id}')" title="Delete">✕</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ════════════════════════════════════════════════════════
+// TIMER
+// ════════════════════════════════════════════════════════
+let tInterval=null, tRemain=0, tTotal=0, tRunning=false, tHabitId=null;
+
+function openTimerById(id){ const h=habits.find(x=>x.id===id); if(h) openTimer(h); }
+function openTimer(h){
+  tHabitId=h.id; tTotal=h.timerTotal; tRemain=h.timerTotal; tRunning=false;
+  clearInterval(tInterval);
+  document.getElementById('timerModalTitle').textContent=h.name;
+  document.getElementById('timerStartBtn').textContent='▶ Start';
+  document.getElementById('timerStatus').textContent='Ready';
+  document.getElementById('timerRingFill').style.stroke='var(--accent)';
+  updateTimerUI();
+  document.getElementById('timerModal').classList.add('open');
+}
+function timerAction(){
+  if(tRunning){
+    clearInterval(tInterval); tRunning=false;
+    document.getElementById('timerStartBtn').textContent='▶ Resume';
+    document.getElementById('timerStatus').textContent='Paused';
+  } else {
+    tRunning=true;
+    document.getElementById('timerStartBtn').textContent='⏸ Pause';
+    document.getElementById('timerStatus').textContent='Running...';
+    tInterval=setInterval(()=>{
+      tRemain--;
+      updateTimerUI();
+      if(tRemain<=0){
+        clearInterval(tInterval); tRunning=false;
+        document.getElementById('timerStatus').textContent='✅ Done!';
+        document.getElementById('timerRingFill').style.stroke='var(--accent2)';
+        document.getElementById('timerStartBtn').textContent='▶ Start';
+        const h=habits.find(x=>x.id===tHabitId);
+        if(h){h.doneDate=tKey();save();renderHabits();}
+        confettiBurst();
+        showAlert('Timer done! Habit complete 🎉','success');
+        setTimeout(()=>closeModal('timerModal'),2000);
+      }
+    },1000);
+  }
+}
+function resetTimer(){
+  clearInterval(tInterval); tRunning=false; tRemain=tTotal;
+  document.getElementById('timerStartBtn').textContent='▶ Start';
+  document.getElementById('timerStatus').textContent='Ready';
+  document.getElementById('timerRingFill').style.stroke='var(--accent)';
+  updateTimerUI();
+}
+function updateTimerUI(){
+  const m=Math.floor(tRemain/60).toString().padStart(2,'0');
+  const s=(tRemain%60).toString().padStart(2,'0');
+  document.getElementById('timerDisplay').textContent=m+':'+s;
+  const pct=tTotal>0?tRemain/tTotal:1;
+  const circ=477.5;
+  document.getElementById('timerRingFill').style.strokeDashoffset=circ-(circ*pct);
+  if(pct<0.25) document.getElementById('timerRingFill').style.stroke='var(--danger)';
+  else if(pct<0.5) document.getElementById('timerRingFill').style.stroke='var(--yellow)';
+}
+
+// ════════════════════════════════════════════════════════
+// HEALTH ONBOARDING
+// ════════════════════════════════════════════════════════
+const QS=[
+  {k:'age',   q:'What is your age?',     opts:['1–5','6–10','11–16','16–22','23–30','31–40','41–50','50+']},
+  {k:'weight',q:'What is your weight (kg)?',opts:['10–20','20–30','30–40','40–50','50–60','60–70','70–90','90+']},
+  {k:'gym',   q:'Do you go to the gym?', opts:['Yes','No']},
+  {k:'target',q:'Do you have a health target?',opts:['Yes','No']},
+  {k:'goal',  q:'Which target do you have?',opts:['Increase weight','Become fit','Reduce fat','Maintain balanced diet']},
+];
+let oAnswers={}, oQ=0, oVisible=['age','weight','gym','target'];
+
+function initHealth(){
+  if(health){
+    document.getElementById('healthOnboard').style.display='none';
+    document.getElementById('healthDash').style.display='block';
+    renderHealthDash();
+  } else {
+    document.getElementById('healthOnboard').style.display='block';
+    document.getElementById('healthDash').style.display='none';
+    oAnswers={}; oQ=0; oVisible=['age','weight','gym','target'];
+    renderOnboard();
+  }
+}
+function renderOnboard(){
+  document.getElementById('onboardSteps').innerHTML=oVisible.map((_,i)=>`<div class="step ${i<=oQ?'done':''}"></div>`).join('');
+  const qDef=QS.find(q=>q.k===oVisible[oQ]);
+  document.getElementById('onboardContent').innerHTML=`
+    <div class="q-card">
+      <div class="q-title">${qDef.q}</div>
+      <div class="q-options" style="grid-template-columns:${qDef.opts.length<=2?'1fr 1fr':'1fr 1fr'};">
+        ${qDef.opts.map(o=>`<div class="q-opt ${oAnswers[qDef.k]===o?'selected':''}" onclick="pickAnswer('${qDef.k}','${o}')">${o}</div>`).join('')}
+      </div>
+      <div style="display:flex;gap:10px;margin-top:20px;">
+        ${oQ>0?`<button class="btn btn-ghost" onclick="prevOQ()">← Back</button>`:''}
+        <button class="btn btn-primary" style="flex:1;" onclick="nextOQ()">${oQ===oVisible.length-1?'Finish ✓':'Continue →'}</button>
+      </div>
+    </div>`;
+}
+function pickAnswer(k,v){ oAnswers[k]=v; renderOnboard(); }
+function prevOQ(){ if(oQ>0){oQ--;renderOnboard();} }
+function nextOQ(){
+  if(!oAnswers[oVisible[oQ]]) return showAlert('Please select an option!','danger');
+  if(oVisible[oQ]==='target'){
+    if(oAnswers.target==='Yes'){if(!oVisible.includes('goal'))oVisible.push('goal');}
+    else oVisible=oVisible.filter(q=>q!=='goal');
+  }
+  if(oQ<oVisible.length-1){oQ++;renderOnboard();}
+  else{health=oAnswers;saveHealth();initHealth();showAlert('Health profile set! 💪','success');}
+}
+function resetHealth(){
+  showConfirm('Reset your health profile? All data will be cleared.', ()=>{
+    health=null;
+    localStorage.removeItem('hf_health');
+    initHealth();
+    showAlert('Health profile reset!','info');
+  });
+}
+
+// ════════════════════════════════════════════════════════
+// HEALTH DASHBOARD
+// ════════════════════════════════════════════════════════
+function wMid(r){return{'10–20':15,'20–30':25,'30–40':35,'40–50':45,'50–60':55,'60–70':65,'70–90':80,'90+':100}[r]||70;}
+function aMid(r){return{'1–5':3,'6–10':8,'11–16':14,'16–22':19,'23–30':26,'31–40':35,'41–50':45,'50+':55}[r]||25;}
+function calcBMI(wr,ar){
+  const w=wMid(wr),age=aMid(ar);
+  let h=age<6?1.0:age<12?1.35:age<16?1.55:age<18?1.65:1.70;
+  return+(w/(h*h)).toFixed(1);
+}
+function bmiInfo(bmi){
+  if(bmi<18.5)return{label:'Underweight',color:'#1DA1F2',emoji:'📉',tip:'Increase calorie intake. Focus on protein & healthy carbs.'};
+  if(bmi<25) return{label:'Normal / Fit',color:'#00dfa2',emoji:'✅',tip:'Great! Maintain your current diet and stay active.'};
+  if(bmi<30) return{label:'Overweight',color:'#ffd166',emoji:'⚠️',tip:'Reduce carbs & fats. Add 30 min cardio daily.'};
+  return{label:'Obese',color:'#ff4757',emoji:'🚨',tip:'Consult a nutritionist. Focus on calorie deficit diet.'};
+}
+function calcTargets(wr,ar,goal,gym){
+  const w=wMid(wr),active=gym==='Yes';
+  const bmr=10*w+500;
+  let cal=Math.round(active?bmr*1.55:bmr*1.375);
+  if(goal==='Increase weight')cal+=400;
+  if(goal==='Reduce fat')cal-=500;
+  if(goal==='Become fit')cal-=200;
+  const protein=Math.round(w*(active?2.0:1.6));
+  const fat=Math.round(cal*0.25/9);
+  const carbs=Math.round((cal-protein*4-fat*9)/4);
+  return{cal:Math.max(1200,cal),protein,fat,carbs,vitamins:2};
+}
+
+function renderHealthDash(){
+  if(!health)return;
+  const bmi=calcBMI(health.weight,health.age);
+  const bi=bmiInfo(bmi);
+  const t=calcTargets(health.weight,health.age,health.goal,health.gym);
+  document.getElementById('healthGoalLabel').textContent='Goal: '+(health.goal||'General Fitness');
+
+  document.getElementById('bmiCard').innerHTML=`
+    <div class="card-title">YOUR BMI & STATUS</div>
+    <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
+      <div style="text-align:center;background:${bi.color}18;border-radius:16px;padding:16px 20px;border:1px solid ${bi.color}40;">
+        <div style="font-size:44px;font-weight:800;color:${bi.color};line-height:1;">${bmi}</div>
+        <div style="font-size:10px;color:${bi.color};letter-spacing:1px;margin-top:4px;font-weight:700;">BMI</div>
+      </div>
+      <div style="flex:1;">
+        <div style="font-size:20px;font-weight:800;color:${bi.color};margin-bottom:6px;">${bi.emoji} ${bi.label}</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">Weight: <b style="color:#fff">${health.weight} kg</b> · Age: <b style="color:#fff">${health.age}</b> · Gym: <b style="color:#fff">${health.gym}</b></div>
+        <div style="font-size:12px;color:var(--muted);line-height:1.6;background:var(--card2);padding:10px 14px;border-radius:12px;">${bi.tip}</div>
+      </div>
+    </div>`;
+
+  const intake=foodLog.reduce((s,f)=>({cal:s.cal+f.cal,p:s.p+f.p,c:s.c+f.c,fat:s.fat+f.f,v:s.v+(f.v||0)}),{cal:0,p:0,c:0,fat:0,v:0});
+
+  const macros=[
+    {lbl:'CALORIES', target:t.cal,   got:Math.round(intake.cal), unit:'kcal',color:'#ffd166'},
+    {lbl:'PROTEIN',  target:t.protein,got:Math.round(intake.p),   unit:'g',   color:'#ff6b9d'},
+    {lbl:'CARBS',    target:t.carbs,  got:Math.round(intake.c),   unit:'g',   color:'#7c6aff'},
+    {lbl:'FAT',      target:t.fat,    got:Math.round(intake.fat), unit:'g',   color:'#ff6b35'},
+  ];
+  document.getElementById('macroGrid').innerHTML=macros.map(m=>{
+    const pct=Math.min(100,Math.round(m.got/m.target*100));
+    const over=m.got>m.target;
+    return `<div class="macro-card">
+      <div class="macro-val" style="color:${over?'var(--danger)':m.color};">${m.got}<span style="font-size:12px;color:var(--muted);"> / ${m.target}</span></div>
+      <div class="macro-unit">${m.unit}</div>
+      <div class="macro-lbl">${m.lbl}</div>
+      <div class="macro-bar-track"><div class="macro-bar-fill" style="width:${pct}%;background:${over?'var(--danger)':m.color};"></div></div>
+      <div style="font-size:10px;color:${over?'var(--danger)':'var(--muted)'};margin-top:4px;">${over?'⚠️ Over':pct+'%'}</div>
+    </div>`;
+  }).join('');
+
+  renderFoodLog();
+}
+
+// ════════════════════════════════════════════════════════
+// FOOD LOG
+// ════════════════════════════════════════════════════════
+function showFoodSugg(){
+  const q=document.getElementById('foodInput').value.trim().toLowerCase();
+  const el=document.getElementById('foodSugg');
+  if(!q){el.style.display='none';return;}
+  const m=FOODS.filter(f=>f.n.toLowerCase().includes(q)).slice(0,9);
+  if(!m.length){el.style.display='none';return;}
+  el.style.display='block';
+  el.innerHTML=m.map(f=>`
+    <div class="sugg-item" onclick="addFood('${f.n.replace(/'/g,"\\'")}')">
+      <div style="display:flex;justify-content:space-between;">
+        <b>${f.n}</b><span style="color:var(--yellow);font-weight:700;">${f.cal} kcal</span>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:2px;">P:${f.p}g · C:${f.c}g · F:${f.f}g</div>
+    </div>`).join('');
+}
+function addFood(name){
+  const f=FOODS.find(x=>x.n===name);
+  if(!f)return;
+  foodLog.push({...f,id:Date.now()});
+  save();renderHealthDash();
+  document.getElementById('foodInput').value='';
+  document.getElementById('foodSugg').style.display='none';
+  showAlert(f.n+' added! 🍽️','success');
+}
+function addFoodManual(){
+  const q=document.getElementById('foodInput').value.trim();
+  if(!q)return;
+  const f=FOODS.find(x=>x.n.toLowerCase().includes(q.toLowerCase()));
+  if(f)addFood(f.n);
+  else showAlert('Not found. Try: roti, burger, egg, rice...','danger');
+}
+function removeFood(id){
+  foodLog=foodLog.filter(f=>f.id!==id);
+  save();renderHealthDash();
+}
+function renderFoodLog(){
+  const total=foodLog.reduce((s,f)=>s+f.cal,0);
+  document.getElementById('foodTotalRow').style.display=foodLog.length?'block':'none';
+  document.getElementById('foodTotalCal').textContent=total+' kcal';
+  if(!foodLog.length){document.getElementById('foodLog').innerHTML='';document.getElementById('foodEmpty').style.display='block';return;}
+  document.getElementById('foodEmpty').style.display='none';
+  document.getElementById('foodLog').innerHTML=foodLog.map(f=>`
+    <div class="food-item">
+      <div>
+        <div style="font-size:13px;font-weight:700;">${f.n}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px;">P:${f.p}g · C:${f.c}g · F:${f.f}g</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-size:14px;font-weight:800;color:var(--yellow);">${f.cal}</span>
+        <button class="btn btn-danger" onclick="removeFood(${f.id})" style="padding:4px 9px;font-size:11px;">✕</button>
+      </div>
+    </div>`).join('');
+}
+
+// ════════════════════════════════════════════════════════
+// MODAL + ALERTS + CONFETTI
+// ════════════════════════════════════════════════════════
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+
+let confirmCallback=null;
+function showConfirm(msg, onYes, icon='⚠️'){
+  confirmCallback=onYes;
+  document.getElementById('confirmMsg').textContent=msg;
+  document.getElementById('confirmIcon').textContent=icon;
+  const yesBtn=document.getElementById('confirmYesBtn');
+  yesBtn.textContent=msg.toLowerCase().includes('reset')?'Yes, Reset':'Yes, Delete';
+  yesBtn.onclick=()=>{ closeModal('confirmModal'); if(confirmCallback) confirmCallback(); };
+  document.getElementById('confirmModal').classList.add('open');
+}
+document.querySelectorAll('.modal-bg').forEach(bg=>{bg.addEventListener('click',e=>{if(e.target===bg)bg.classList.remove('open');});});
+
+function showAlert(msg,type='success'){
+  const el=document.createElement('div');
+  el.className='alert '+(type||'success');
+  el.textContent=msg;
+  document.getElementById('alertWrap').appendChild(el);
+  setTimeout(()=>{el.style.opacity='0';el.style.transform='scale(0.8)';el.style.transition='all 0.3s';setTimeout(()=>el.remove(),300);},3000);
+}
+
+function confettiBurst(){
+  const colors=['#7c6aff','#00dfa2','#ffd166','#ff6b9d','#ff6b35'];
+  for(let i=0;i<14;i++){
+    const el=document.createElement('div');
+    el.className='confetti-piece';
+    el.style.cssText=`left:${20+Math.random()*60}%;top:${20+Math.random()*40}%;background:${colors[i%colors.length]};transform:rotate(${Math.random()*360}deg);animation-delay:${Math.random()*0.3}s;`;
+    document.body.appendChild(el);
+    setTimeout(()=>el.remove(),1200);
+  }
+}
+
+document.addEventListener('click',e=>{
+  if(!e.target.closest('#foodInput')&&!e.target.closest('#foodSugg')){
+    const s=document.getElementById('foodSugg');if(s)s.style.display='none';
+  }
+});
+setInterval(renderHabits,60000);
+renderHabits();
+
+// ── PWA Service Worker ──────────────────────────────────
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('./sw.js')
+      .then(()=>console.log('HabitFlow SW registered ✅'))
+      .catch(e=>console.log('SW error:',e));
+  });
+}
+</script>
+</body>
+</html>
